@@ -9,7 +9,9 @@ Here’s a quick explanation which will navigate you through the project:
  
  2. [Create a database](https://dev.mysql.com/doc/refman/8.0/en/create-database.html) (or use local files instead. If you do so, consider that you’ll have to rewrite save data functions in all parts of the program)
  
- <create database user_activity;>
+ ```sql
+ create database user_activity;
+ ```
  
   3. You have to create following tables in database:
 
