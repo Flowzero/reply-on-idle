@@ -66,6 +66,6 @@ Here’s specific order you have to follow:
 
 1. Save messages and users you want to send the messages to the database before running any scripts. It needs to be done to guarantee the program won't crash trying to get data which does not exist. (You can save data manually or by using telegram bot - optional part)
 
-2. Save messages and users you want to send the messages to the database before running any scripts. It needs to be done to guarantee the program won't crash trying to get data which does not exist. (You can save data manually or by using telegram bot - optional part)
+2. Run user client and open Telegram in order to save your last activity to the database. It needs to be done to guarantee the program won't crash trying to get data which does not exist. Wait until you see the “Last seen at …” message in your terminal. After this you can go to the next step.
 
 3. Run User client reply 
