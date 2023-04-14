@@ -1,24 +1,12 @@
-# This code meets python 3.11 conditions
-
-import logging
-
-from telethon.sync import TelegramClient, events
-from telethon.tl.types import UserStatusOffline
-import mysql.connector.errors
-import datetime
-import logging
-import json
 import os
+import json
+import datetime
 
-from utilts.config import config_setter
-from utilts.DBcm import UseDatabase
-from utilts.DBcm import dbconfig
+import asyncio
+from pyrogram import Client
 
-# fill dbconfig in utils.DBcm with your data
-
-# recommended to enable logging when working with events
-logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
-                    level=logging.WARNING)
+from utilities.DBcm import *
+from utilities.config import config_setter
 
 # if config haven't been set yet
 if not os.path.exists(os.path.join(os.getcwd(), 'config.json')):
@@ -27,76 +15,58 @@ if not os.path.exists(os.path.join(os.getcwd(), 'config.json')):
 with open('config.json', mode='r') as r_file:
     config = json.load(r_file)
 
-client = TelegramClient(config.get('session'),
-                        config.get('api_id'),
-                        config.get('api_hash'))
+client = Client(config.get('session'),
+                config.get('api_id'),
+                config.get('api_hash'))
 
-# ___________________filter function___________________
 
-def db_empty(*args, **kwargs):
-    with UseDatabase(dbconfig) as cursor:
-        _SQL = """select count(*) from user_data"""
-        cursor.execute(_SQL)
-        if cursor.fetchall()[-1][0] == 0:
-            return True
+async def event_listener(queue: asyncio.Queue):
+    while queue.qsize() != 2:
+        async with client:
+            user_data = await client.get_me()
+            user_last_seen = user_data.last_online_date
+            if user_last_seen != None:
+                await queue.put(user_last_seen)
+
+            # data must be not None
+
+        await asyncio.sleep(10)
+
+
+async def timer_send(queue: asyncio.Queue):
+    while True:
+        user_last_seen = await queue.get()
+        current_time = datetime.datetime.now()
+        time_diff = current_time - user_last_seen
+        print(f'Current time: {current_time}\n Last seen: {user_last_seen}')
+        if time_diff > datetime.timedelta(minutes=5):
+            with UseDatabase(dbconfig) as cursor:
+                _SQL = """select * from user_message"""
+                cursor.execute(_SQL)
+                for message, user in cursor.fetchall():
+                    print(message, user)
+
+                    # put here your code for message sending
+
+            print('Mesages sent')
+            queue.put_nowait('Stop event_listener')
+            break
         else:
-            return False
+            await asyncio.sleep(10)
 
-# ___________________MAIN PART WITH ASYNCIO ___________________
-
-@client.on(events.UserUpdate(func=db_empty))
-async def handler(event: events.UserUpdate.Event):
-    user_data = await client.get_entity(
-        await client.get_me()
-    )
-    print(user_data.__dict__.get('status'))
-
-    if isinstance(user_data.status, UserStatusOffline):
-        last_seen = user_data.status.was_online # utc+0
-        print('Last time seen at', last_seen)
-        with UseDatabase(dbconfig) as cursor:
-            try:
-                _SQL = """insert into user_data
-                          (id, user, timezone, last_seen)
-                          values
-                          (%s, %s, %s, %s)"""
-                cursor.execute(_SQL, (user_data.id,
-                                      user_data.first_name,
-                                      'Europe/London - UTC +00:00',
-                                      last_seen))
-
-            except mysql.connector.errors.DatabaseError as DB_Error:
-                print("Error Code:", DB_Error.errno)
-                print("SQLSTATE", DB_Error.sqlstate)
-                print("Message:", DB_Error.msg)
+    print('The program will shit down soon...')
 
 
-@client.on(events.UserUpdate(func=not db_empty))
-async def process_handler(event: events.UserUpdate.Event):
-    user_data = await client.get_entity(
-        await client.get_me()
-    )
-    print(user_data.__dict__.get('status'))
-    if isinstance(user_data.status, UserStatusOffline):
-        last_seen: datetime = user_data.status.was_online
-        print('Last time seen at', last_seen)
-        with UseDatabase(dbconfig) as cursor:
-            try:
-                _SQL = """update user_data
-                          set last_seen = %s
-                          where
-                          id = %s"""
-                cursor.execute(_SQL, (last_seen,
-                                      user_data.id))
-            except mysql.connector.errors.DatabaseError as DB_Error:
-                print("Error Code:", DB_Error.errno)
-                print("SQLSTATE", DB_Error.sqlstate)
-                print("Message:", DB_Error.msg)
+async def main():
+    queue = asyncio.Queue(2)
+    event_listener_task = asyncio.create_task(event_listener(queue))
+    timer_send_task = asyncio.create_task(timer_send(queue))
+    await asyncio.gather(timer_send_task, event_listener_task)
 
 
-if __name__ == '__main__':
-    try:
-        client.start()
-        client.run_until_disconnected()
-    except KeyboardInterrupt:
-        pass
+try:
+    asyncio.get_event_loop().run_until_complete(main())  # both task must be finished
+except KeyboardInterrupt:
+    pass
+except RuntimeError:
+    pass

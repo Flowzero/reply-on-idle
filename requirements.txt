@@ -1,4 +1,2 @@
-pytz ~= 2022.7
-aiogram ~= 2.25.1
-Telethon ~= 1.26.0
 mysql-connector-python ~= 8.0.32
+Pyrogram~=2.0.103
