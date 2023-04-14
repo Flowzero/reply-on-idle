@@ -46,15 +46,15 @@ async def timer_send(queue: asyncio.Queue):
                 for message, user in cursor.fetchall():
                     print(message, user)
 
-                    # put here your code for message sending
+                    # put your code for message sending here
 
-            print('Mesages sent')
+            print('Messages sent')
             queue.put_nowait('Stop event_listener')
             break
         else:
             await asyncio.sleep(10)
 
-    print('The program will shit down soon...')
+    print('The program will shut down soon...')
 
 
 async def main():
