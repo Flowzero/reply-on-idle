@@ -1,9 +1,11 @@
 import os
+import sys
 import json
 import datetime
 
 import asyncio
 from pyrogram import Client
+import mysql.connector.errors
 
 from utilities.DBcm import *
 from utilities.config import config_setter
@@ -21,14 +23,13 @@ client = Client(config.get('session'),
 
 
 async def event_listener(queue: asyncio.Queue):
-    while queue.qsize() != 2:
+    while True: # sys.exit() when reaching executive code
+                # no need to break the cycle
         async with client:
             user_data = await client.get_me()
             user_last_seen = user_data.last_online_date
-            if user_last_seen != None:
+            if user_last_seen is not None:
                 await queue.put(user_last_seen)
-
-            # data must be not None
 
         await asyncio.sleep(10)
 
@@ -38,27 +39,30 @@ async def timer_send(queue: asyncio.Queue):
         user_last_seen = await queue.get()
         current_time = datetime.datetime.now()
         time_diff = current_time - user_last_seen
-        print(f'Current time: {current_time}\n Last seen: {user_last_seen}')
-        if time_diff > datetime.timedelta(minutes=5):
-            with UseDatabase(dbconfig) as cursor:
-                _SQL = """select * from user_message"""
-                cursor.execute(_SQL)
-                for message, user in cursor.fetchall():
-                    print(message, user)
+        print(f'Current time: {current_time}')
+        print(f'Last seen   : {user_last_seen}')
+        if time_diff > datetime.timedelta(hours=2):
+            try:
+                with UseDatabase(dbconfig) as cursor:
+                    _SQL = """select * from user_message"""
+                    cursor.execute(_SQL)
+                    for message, user in cursor.fetchall():
+                        print(message, user)
 
-                    # put your code for message sending here
+                        # put your code for message sending here
 
-            print('Messages sent')
-            queue.put_nowait('Stop event_listener')
-            break
+                print('Messages sent')
+                sys.exit()
+            except mysql.connector.errors.Error as ex:
+                print(ex.msg)
+                print(ex.errno)
+                print(ex.sqlstate)
         else:
             await asyncio.sleep(10)
 
-    print('The program will shut down soon...')
-
 
 async def main():
-    queue = asyncio.Queue(2)
+    queue = asyncio.Queue(1)
     event_listener_task = asyncio.create_task(event_listener(queue))
     timer_send_task = asyncio.create_task(timer_send(queue))
     await asyncio.gather(timer_send_task, event_listener_task)

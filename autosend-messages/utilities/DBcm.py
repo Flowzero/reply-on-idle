@@ -3,7 +3,7 @@ import mysql.connector
 
 # provide your database data below
 
-dbconfig = {'host': '',
+dbconfig = {'host': '', # If your DB is located on your computer, specify '127.0.0.1'
             'user': '',
             'password': '',
             'database': ''}
@@ -18,7 +18,7 @@ class UseDatabase:
         self.conn   = mysql.connector.connect(**self.config)
         self.cursor = self.conn.cursor(buffered=True)
         # using buffered to avoid InternalError as it generates
-        # when not all data was pulled oyt from the database
+        # when not all data was pulled out from the database
         return self.cursor
 
     def __exit__(self, exc_type, exc_val, exc_tb):
