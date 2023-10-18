@@ -1,9 +1,7 @@
-
 import json
 
 
 def config_setter():
-    # <desc of func>
     with open('config.json', mode='w') as w_file:
         result = {
             k: v for k, v in

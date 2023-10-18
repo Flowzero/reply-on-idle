@@ -3,7 +3,7 @@ import mysql.connector
 
 # provide your database data below
 
-dbconfig = {'host': '', # If your DB is located on your computer, specify '127.0.0.1'
+dbconfig = {'host': '',
             'user': '',
             'password': '',
             'database': ''}
