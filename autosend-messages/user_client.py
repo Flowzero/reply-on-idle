@@ -21,7 +21,7 @@ client = Client(config.get('session'),
                 config.get('api_hash'))
 
 # adjust to your preferences
-time_until_sending = timedelta(seconds=12)
+time_until_sending = timedelta(seconds=60)
 
 """ 
     following code is a prototype: 
@@ -34,7 +34,9 @@ time_until_sending = timedelta(seconds=12)
 async def event_listener(queue: asyncio.Queue):
     try:
         while True:
-            async with client:
+            if not client.is_connected:
+                await client.start()
+            else:
                 last_time_seen = (await client.get_me()).last_online_date
                 if last_time_seen is not None:
                     await queue.put(last_time_seen)
@@ -60,11 +62,11 @@ async def timer(queue: asyncio.Queue):
                 with UseDatabase(dbconfig) as cursor:
                     _SQL = """select * from user_message"""
                     cursor.execute(_SQL)
-                    for message, user in cursor.fetchall():
-                        print(message, user)
+                    for message, users in cursor.fetchall():
 
                         await asyncio.wait([
                             asyncio.create_task(client.send_message(user, message))
+                            for user in users.split()
                         ])
 
                     print("Messages has been sent")
