@@ -13,7 +13,7 @@ from utilities.config import config_setter
 if not path.exists(path.join(getcwd(), 'config.json')):
     config_setter()
 
-with open('utilities/config.json', mode='r') as r_file:
+with open('config.json', mode='r') as r_file:
     config = json.load(r_file)
 
 client = Client(config.get('session'),
@@ -21,7 +21,7 @@ client = Client(config.get('session'),
                 config.get('api_hash'))
 
 # adjust to your preferences
-time_until_sending = timedelta(hours=2)
+time_until_sending = timedelta(seconds=12)
 
 """ 
     following code is a prototype: 
@@ -30,12 +30,12 @@ time_until_sending = timedelta(hours=2)
     by Flowzy
 """
 
+
 async def event_listener(queue: asyncio.Queue):
     try:
         while True:
             async with client:
-                user_data = await client.get_me()
-                last_time_seen = user_data.last_online_date
+                last_time_seen = (await client.get_me()).last_online_date
                 if last_time_seen is not None:
                     await queue.put(last_time_seen)
 
@@ -50,6 +50,7 @@ async def timer(queue: asyncio.Queue):
         last_time_seen = await queue.get()
         current_time = datetime.now()
         time_diff = current_time - last_time_seen
+        print(current_time)
 
         print(f"Current time  : {current_time}",
               f"Last time seen: {last_time_seen}", sep="\n")
@@ -62,15 +63,19 @@ async def timer(queue: asyncio.Queue):
                     for message, user in cursor.fetchall():
                         print(message, user)
 
-                        # put code to message sending here
+                        await asyncio.wait([
+                            asyncio.create_task(client.send_message(user, message))
+                        ])
 
                     print("Messages has been sent")
                     return
 
             except mysql.connector.errors.Error as ex:
-                print(ex.msg,
-                      ex.errno,
-                      ex.sqlstate, sep='\n')
+                print("-"*80,
+                      f"Error message : {ex.msg}",
+                      f"Error code    : {ex.errno}",
+                      f"SQL fail state: {ex.sqlstate}", sep='\n')
+                return
         else:
             await asyncio.sleep(3)
 
