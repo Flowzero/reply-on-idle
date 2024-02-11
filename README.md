@@ -21,19 +21,16 @@ Telegram and passes this value to the timer function. Don't worry about the infi
 runs out. 
 
 The timer_send function is a timer that gets the time of the last activity and makes the following comparison: if more 
-time has passed since the last activity than specified, the message sending function is triggered. The executive code 
-itself is not written, I left a place for it (if you want, you can write its implementation yourself). After sending the
-messages, the program will terminate
+time has passed since the last activity than specified, the message sending function is triggered.
 
 ```python
 if time_diff > datetime.timedelta(hours=2):
     with UseDatabase(dbconfig) as cursor:
         _SQL = """select * from user_message"""
         cursor.execute(_SQL)
-        for message, user in cursor.fetchall():
-            print(message, user)
+               ...
 
-            # put your code for message sending here
+            
 ```
 
 ## Important note ##
