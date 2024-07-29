@@ -23,13 +23,6 @@ client = Client(config.get('session'),
 # adjust to your preferences
 time_until_sending = timedelta(seconds=60)
 
-""" 
-    following code is a prototype: 
-    it's main task is to show the async algorithm
-    ---------------------------------------------
-    by Flowzy
-"""
-
 
 async def event_listener(queue: asyncio.Queue):
     try:
@@ -101,3 +94,5 @@ if __name__ == "__main__":
     except Exception as error:
         print(error,
               error.args, sep="\n")
+
+# created by Flowzy
