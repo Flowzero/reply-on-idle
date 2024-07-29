@@ -1,16 +1,7 @@
  
-Automatic message sending based on the user's activity on Telegram. 
-Program allows you to pre-write messages which will be sent to users you choose if you won't appear online for some time.
+Automatic message sending based on the user's online status on Telegram. 
+Program allows you to pre-write messages which will be sent to users you specify if you won't appear online until the timer runs out. Every time you appear online the timer resets.
 
-## Update Note ## 
-
-16.04.2023
-
-Due to some issues with Telethon I had to use another library: Pyrogram.
-
-I rebuilt project structure and made some significant changes. Code presented in this directory is made only to show
-main functions and concepts. I was not really interested in learning Pyrogram features, so I left space for executive 
-code. 
 
 ## General principle of operation ##
 A queue is created in the main function, through which the coroutines will be 
